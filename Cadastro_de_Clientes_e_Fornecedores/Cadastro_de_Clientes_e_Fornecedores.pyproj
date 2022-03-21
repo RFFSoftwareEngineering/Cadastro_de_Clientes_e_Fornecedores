@@ -27,6 +27,17 @@
   <ItemGroup>
     <InterpreterReference Include="Global|VisualStudio|KnowHow" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="addpic.png" />
+    <Content Include="cadastro.png" />
+    <Content Include="cross-icon-refined.png" />
+    <Content Include="IEcheck-checked-hover.png" />
+    <Content Include="IEcheck-checked.png" />
+    <Content Include="IEcheck-hover.png" />
+    <Content Include="IEcheck-unchecked.png" />
+    <Content Include="search-icon.png" />
+    <Content Include="SomeLogo.jpg" />
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
        Visual Studio and specify your pre- and post-build commands in
