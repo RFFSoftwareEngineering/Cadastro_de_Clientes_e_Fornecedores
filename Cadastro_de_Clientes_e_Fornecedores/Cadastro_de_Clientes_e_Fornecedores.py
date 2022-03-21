@@ -1056,6 +1056,8 @@ class MainTree(QWidget):
             self.emissedt.show()
             self.contribbox.setCurrentIndex(2)
             self.IEchck.hide()
+            self.contriblbl.setText("Contribuinte")
+            self.countryedt.hide()
             self.cnpjorcpflbl.show()
             self.statereglbl.show()
             self.cityreglbl.show()
