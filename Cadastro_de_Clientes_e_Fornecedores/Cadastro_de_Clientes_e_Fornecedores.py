@@ -1,32 +1,39 @@
 import sys
-from PyQt6 import QtWidgets, QtGui, QtCore, QtSql
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 from PyQt6.QtSql import *
-import time
 from datetime import date
+from screeninfo import get_monitors
+import mysql.connector as mc
+import keyring
+from pycep_correios import *
+from package_viacep import viacep
 
 today = date.today()
 strf_today = today.strftime("%d/%m/%Y")
+
+for m in get_monitors():
+    x_screen = m.width
 
 
 class MainTree(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Some Company") # let's do a vertical-based layout as the main layout
+        self.setWindowTitle("xxxxxxxxxxxxx") # let's do a vertical-based layout as the main layout
         self.setStyleSheet("background-color: #e9f2f0")
-        self.setWindowIcon(QIcon("SomeLogo"))
-        self.move(375, 75)
+        self.setWindowIcon(QIcon("xxxxxxxxxxxxx"))
+        self.move(350, 50)
 
         self.main_layout = QGridLayout(self)  # but a grid layout for the main window
         self.setLayout(self.main_layout)
 
-        self.Logo = QPixmap("SomeLogo")
+        self.Logo = QPixmap("original-logo")
         self.Logolbl = QLabel("", self)
         self.Logolbl.setPixmap(self.Logo)
-        self.Logolbl.setStyleSheet("padding-left: 190px; padding-top: 80px; padding-right: 150px; padding-bottom: 325px;")
+        self.Logolbl.setStyleSheet("padding-left: 150px; padding-top: 50px; padding-right: 150px; padding-bottom: 325px;")
+
 
         self.main_layout.addWidget(self.Logolbl, 0, 0)
 
@@ -53,14 +60,95 @@ class MainTree(QWidget):
     
         self.show()
 
+        service_id = 'xxxxxxxxxxxxx'
+        keyring.set_password(service_id, None, 'xxxxxxxxxxxxx')
+
+        try:
+            password_key = keyring.get_password(service_id, None)
+            con = mc.connect(
+                host="xxxxxxxxxxxxx",
+                user="xxxxxxxxxxxxx",
+                password=password_key,
+                database="xxxxxxxxxxxxx"
+            )
+            
+            query = f"""
+                    CREATE TABLE IF NOT EXISTS knowhow.cadastro_clientes_fornecedores (
+                    ID integer PRIMARY KEY AUTO_INCREMENT NOT NULL,
+                    Nome TEXT,
+                    Fantasia TEXT,
+                    TipoPessoa TEXT,
+                    CNPJ TEXT,
+                    CPF TEXT,
+                    RegimeTributario TEXT, 
+                    ClienteDesde TEXT, 
+                    Contribuinte TEXT, 
+                    InscricaoEstadual TEXT, 
+                    InscricaoMunicipal TEXT, 
+                    IEIsento TEXT, 
+                    RG TEXT, 
+                    OrgaoEmissor TEXT, 
+                    Pais TEXT, 
+                    CEP TEXT, 
+                    UF TEXT, 
+                    Cidade TEXT, 
+                    Bairro TEXT, 
+                    Endereco TEXT,
+                    Numero TEXT,
+                    Complemento TEXT,
+                    CEP2 TEXT,
+                    UF2 TEXT,
+                    Cidade2 TEXT,
+                    Bairro2 TEXT,
+                    Endereco2 TEXT,
+                    Numero2 TEXT,
+                    Complemento2 TEXT,
+                    Estrangeiro TEXT,
+                    Estrangeiro2 TEXT,
+                    ContactInfo TEXT,
+                    PessoasDeContato TEXT,
+                    Fone TEXT,
+                    Fax TEXT,
+                    Celular TEXT,
+                    Celular2 TEXT,
+                    Email TEXT,
+                    EmailNfe TEXT,
+                    WebSite TEXT,
+                    Celular3 TEXT,
+                    Celular4 TEXT,
+                    CargaMedia TEXT,
+                    TipoContrato TEXT,
+                    Situacao TEXT,
+                    Vendedor TEXT,
+                    NaturezaOperacao TEXT,
+                    InscricaoSuframa TEXT,
+                    Image MEDIUMBLOB,
+                    LimiteCredito TEXT,
+                    CondicaoPagament TEXT,
+                    Categoria TEXT,
+                    Observacoes TEXT
+                    );
+                    """
+            cursor = con.cursor()
+            cursor.execute(query)
+            con.commit()
+            cursor.close()
+            con.close()            
+        except mc.Error as e:
+            msg = QMessageBox()
+            msg.setText(f"Falha ao Conectar ao Banco de Dados:{e}")
+            msg.setWindowTitle("Conexão")
+            msg.exec()
+            sys.exit(1)
+
     def CreateRegistersWindow(self):
         self.ClientsWindow = QScrollArea()  # QScrollArea as Parent of a Widget to the application works as we expect
         self.widget = QWidget(self.ClientsWindow)
         self.ClientsWindow.setGeometry(480, 200, 1300, 720)
         self.ClientsWindow.showMaximized()
-        self.ClientsWindow.setWindowTitle("Some Company - Cadastros")
+        self.ClientsWindow.setWindowTitle("xxxxxxxxxxxxx - Cadastros")
         self.ClientsWindow.setStyleSheet("background-color: #e9f2f0")
-        self.ClientsWindow.setWindowIcon(QIcon("SomeLogo"))
+        self.ClientsWindow.setWindowIcon(QIcon("xxxxxxxxxxxxx"))
         self.ClientsWindow.show()
 
         self.layout = QVBoxLayout(self.widget) # let's override the scrollbar this way
@@ -98,6 +186,13 @@ class MainTree(QWidget):
         self.btnbusca.setAutoDefault(True)
         self.btnbusca.clicked.connect(self.RegSrchOne)
 
+        self.btntable = QPushButton("Mostrar/Esconder Tabela", self.search_widget)
+        self.btntable.setFont(QFont("Arial", 12, 8, True))
+        self.btntable.setMaximumWidth(350)
+        self.btntable.setStyleSheet("QPushButton {border-radius: 9px; background-color: #44a665; color :white; padding: 7px 14px;} QPushButton:hover {background-color: #5ac47e}")
+        self.btntable.setAutoDefault(True)
+        self.btntable.clicked.connect(self.ShowHideTable)
+
         self.search_layout.addSpacing(30)
 
         self.layout.addWidget(self.search_widget)
@@ -105,13 +200,24 @@ class MainTree(QWidget):
 
         self.searchby = QComboBox(self.search_widget)
         self.searchby.setStyleSheet("border-radius: 7px; background-color: white; color: gray; padding: 7px 12px; border-width:1px; border-color: gray; border-style: solid;")
-        self.searchby.addItems(["Nome", "CNPJ", "ID"])
+        self.searchby.addItems(["Nome", "CNPJ", "ID", "CPF"])
         self.searchby.activated.connect(self.ActivatedCB)
         self.searchby.currentTextChanged.connect(self.ItemSelectedCB)
 
-        self.search_layout.addSpacing(-941)
+        self.search_layout.addSpacing(-261)
 
         self.search_layout.addWidget(self.searchby, alignment=Qt.AlignmentFlag.AlignLeft)
+
+        self.search_layout.addWidget(self.btntable, alignment=Qt.AlignmentFlag.AlignLeft)
+
+        self.BtnChk = QPushButton("Usar Linha Selecionada", self.search_widget)
+        self.BtnChk.setFont(QFont("Arial", 12, 8, True))
+        self.BtnChk.setMaximumWidth(350)
+        self.BtnChk.setStyleSheet("QPushButton {border-radius: 9px; background-color: #44a665; color :white; padding: 7px 14px;} QPushButton:hover {background-color: #5ac47e}")
+        self.BtnChk.setAutoDefault(True)
+        self.BtnChk.clicked.connect(self.retrieve_checkbox_linha)
+
+        self.search_layout.addWidget(self.BtnChk, alignment=Qt.AlignmentFlag.AlignLeft)
 
         self.regdata = QLabel("Dados Cadastrais", self.ClientsWindow)
         self.regdata.setStyleSheet("color: rgb(102, 102, 102); letter-spacing: 1px; font-weight: bold; padding-top: 10px;")
@@ -125,7 +231,7 @@ class MainTree(QWidget):
 
         self.data_widget.setLayout(self.data_layout)
 
-        self.lblcls2 = QLabel("Nome*", self.data_widget)
+        self.lblcls2 = QLabel("Nome", self.data_widget)
         self.lblcls2.setFont(QFont("Arial", 10, 4))
         self.lblcls2.setStyleSheet("color: rgb(102, 102, 102); letter-spacing: 1px; padding-top:15px;")
 
@@ -196,11 +302,15 @@ class MainTree(QWidget):
         self.cnpjedt.setStyleSheet("QLineEdit {border-radius: 7px; background-color: white; color: black; padding: 7px 14px; border-width:1px; border-color: gray; border-style:solid;} QLineEdit:hover {border-radius: 7px; background-color: white; color: black; padding: 7px 14px; border-width:1px; border-color: #44a665; border-style:solid;}")
         self.cnpjedt.setFixedWidth(500)
         self.cnpjedt.setFont(QFont("Arial", 12, 12))
+        self.cnpjedt.setInputMask("99.999.999/9999-99")
+        self.cnpjedt.mousePressEvent = self.RegSrch
 
         self.cpfedt = QLineEdit("", self.data_widget2)
         self.cpfedt.setStyleSheet("QLineEdit {border-radius: 7px; background-color: white; color: black; padding: 7px 14px; border-width:1px; border-color: gray; border-style:solid;} QLineEdit:hover {border-radius: 7px; background-color: white; color: black; padding: 7px 14px; border-width:1px; border-color: #44a665; border-style:solid;}")
         self.cpfedt.setFixedWidth(500)
         self.cpfedt.setFont(QFont("Arial", 12, 12))
+        self.cpfedt.setInputMask("999.999.999-99")
+        self.cpfedt.mousePressEvent = self.RegSrch
         self.cpfedt.hide()
 
         self.data_layout2.addWidget(self.cnpjedt, 1, 0, alignment=Qt.AlignmentFlag.AlignLeft)
@@ -272,6 +382,8 @@ class MainTree(QWidget):
         self.RGEdt.setStyleSheet("QLineEdit {border-radius: 7px; background-color: white; color: black; padding: 7px 14px; border-width:1px; border-color: gray; border-style:solid;} QLineEdit:hover {border-radius: 7px; background-color: white; color: black; padding: 7px 14px; border-width:1px; border-color: #44a665; border-style:solid;}")
         self.RGEdt.setFixedWidth(500)
         self.RGEdt.setFont(QFont("Arial", 12, 12))
+        self.RGEdt.setInputMask("99.999.999-9")
+        self.RGEdt.mousePressEvent = self.RegSrch
         self.RGEdt.hide()
 
         self.cityregedt = QLineEdit("", self.data_widget2)
@@ -447,14 +559,14 @@ class MainTree(QWidget):
         self.cepedt1.setFixedWidth(220)
         self.cepedt1.setFont(QFont("Arial", 12, 12))
         self.cepedt1.setInputMask("99999-999")
-        self.cepedt1.returnPressed.connect(self.RegSrch)
+        self.cepedt1.returnPressed.connect(self.BuscaCep1)
         self.cepedt1.mousePressEvent = self.RegSrch
 
         self.cepedt2 = QLineEdit("", self.charger_widget3)
         self.cepedt2.setStyleSheet("QLineEdit {border-radius: 7px; background-color: white; color: black; padding: 7px 14px; border-width:1px; border-color: gray; border-style:solid;} QLineEdit:hover {border-radius: 7px; background-color: white; color: black; padding: 7px 14px; border-width:1px; border-color: #44a665; border-style:solid;}")
         self.cepedt2.setFixedWidth(220)
         self.cepedt2.setFont(QFont("Arial", 12, 12))
-        self.cepedt2.setInputMask("99999-999")
+        #self.cepedt2.setInputMask("99999-999")
 
         self.layoutadr1.addWidget(self.cepedt1, 1, 0, alignment=Qt.AlignmentFlag.AlignLeft)
         self.layoutadr2.addWidget(self.cepedt2, 1, 0, alignment=Qt.AlignmentFlag.AlignLeft)
@@ -464,12 +576,16 @@ class MainTree(QWidget):
         self.adrsearch.setIconSize(QSize(25, 25))
         self.adrsearch.setAutoDefault(True) 
         self.adrsearch.setMaximumWidth(35)
+        self.adrsearch.clicked.connect(self.BuscaCep1)
+        self.cepedt1.returnPressed.connect(self.BuscaCep1)
 
         self.adrsearch2 = QPushButton("", self.charger_widget3)
         self.adrsearch2.setIcon(QIcon("search-icon.png"))
         self.adrsearch2.setIconSize(QSize(25, 25))
         self.adrsearch2.setAutoDefault(True)
         self.adrsearch2.setMaximumWidth(35)
+        #self.adrsearch2.clicked.connect(self.BuscaCep2)
+        #self.cepedt2.returnPressed.connect(self.BuscaCep2)
 
         self.layoutadr2.addWidget(self.adrsearch2, 1, 1, alignment=Qt.AlignmentFlag.AlignLeft)
         self.layoutadr1.addWidget(self.adrsearch, 1, 1, alignment=Qt.AlignmentFlag.AlignLeft)
@@ -703,6 +819,8 @@ class MainTree(QWidget):
         self.foneedt.setStyleSheet("QLineEdit {border-radius: 7px; background-color: white; color: black; padding: 7px 14px; border-width:1px; border-color: gray; border-style:solid;} QLineEdit:hover {border-radius: 7px; background-color: white; color: black; padding: 7px 14px; border-width:1px; border-color: #44a665; border-style:solid;}")
         self.foneedt.setFont(QFont("Arial", 12, 12))
         self.foneedt.setFixedWidth(250)
+        self.foneedt.setInputMask("(99) 9999-9999")
+        self.foneedt.mousePressEvent = self.RegSrch
 
         self.contact_layout.addWidget(self.fonelbl, 0, 0, alignment=Qt.AlignmentFlag.AlignLeft)
         self.contact_layout.addWidget(self.foneedt, 1, 0, alignment=Qt.AlignmentFlag.AlignLeft)
@@ -727,6 +845,8 @@ class MainTree(QWidget):
         self.celedt.setStyleSheet("QLineEdit {border-radius: 7px; background-color: white; color: black; padding: 7px 14px; border-width:1px; border-color: gray; border-style:solid;} QLineEdit:hover {border-radius: 7px; background-color: white; color: black; padding: 7px 14px; border-width:1px; border-color: #44a665; border-style:solid;}")
         self.celedt.setFont(QFont("Arial", 12, 12))
         self.celedt.setFixedWidth(250)
+        self.celedt.setInputMask("(99) 99999-9999")
+        self.celedt.mousePressEvent = self.RegSrch
 
         self.contact_layout.addWidget(self.cellbl, 0, 2, alignment=Qt.AlignmentFlag.AlignLeft)
         self.contact_layout.addWidget(self.celedt, 1, 2, alignment=Qt.AlignmentFlag.AlignLeft)
@@ -882,6 +1002,8 @@ class MainTree(QWidget):
         self.picpix = QPixmap("addpic.png")
         self.picpix2 = self.picpix.scaledToWidth(80)
         self.piclbl2.setPixmap(self.picpix2)
+        self.fname = None
+        self.fnamepath = None
 
         self.add_layout3.addWidget(self.piclbl2, 1, 4, alignment=Qt.AlignmentFlag.AlignBottom)
 
@@ -1003,9 +1125,1134 @@ class MainTree(QWidget):
 
         self.layout.addWidget(self.final_widget_obs)
 
-        ### Front-end (clients register window) widgets done, functions below:
+        self.TableView = QTableWidget(self.ClientsWindow)        
+        self.TableView.setGeometry(0, 400, x_screen - 20, 420)
+        self.TableView.setRowCount(1)
+        self.TableView.setColumnCount(53)
+        columns = ["ID", "Nome", "Fantasia", "Tipo de Pessoa", "CNPJ", "CPF", "Regime Tributário", "Cliente Desde", "Contribuinte ", "Inscrição Estadual ", "Inscrição Municipal", "IE Isento", "RG", "Órgao Emissor", "País", "CEP", "UF", "Cidade", "Bairro", "Endereço", "Número", "Complemento", "CEP Cobrança", "UF Cobrança", "Cidade Cobrança", "Bairro Cobrança", "Endereço Cobrança", "Número Cobrança", "Complemento Cobrança", "UF Estrangeiro", "UF Estrangeiro Cobrança", "Informações de Contato", "Pessoas De Contato", "Fone", "Fax", "Celular", "Celular2", "E-mail", "E-mail para envio de Nfe", "WebSite", "Celular3", "Celular4", "Carga Média", "Tipo de Contrato", "Situação", "Vendedor", "Natureza da Operação", "Inscrição Suframa", "Logo", "Limite de Credito", "Condição de Pagamento", "Categoria", "Observações"]
+        self.TableView.setHorizontalHeaderLabels(columns)
+        self.TableView.resizeRowsToContents()
+        self.TableView.resizeColumnsToContents()
+        self.TableView.setStyleSheet("""
+                                        QTableWidget::item {
+                                        background-color: white;
+                                        color: rgb(102, 102, 102);
+                                        font-weight: bold;
+                                        border-radius: 7px;
+                                        }
+                                        QTableWidget::indicator {
+                                        width: 25px;
+                                        height: 25px;
+                                        }
+                                        QTableWidget::indicator:unchecked {
+                                        image: url(IEcheck-unchecked.png);
+                                        }
+                                        QTableWidget::indicator:checked {
+                                        image: url(IEcheck-checked.png);
+                                        }
+                                        QTableWidget::indicator:hover {
+                                        image: url(IEcheck-hover.png);
+                                        }
+                                        QTableWidget::indicator:checked:hover {
+                                        image: url(IEcheck-checked-hover.png);
+                                        }
+                                        QHeaderView::section {
+                                        background-color: #e9f2f0;
+                                        color: rgb(102, 102, 102);
+                                        font-weight: bold;
+                                        border-radius: 7px;
+                                        }
+                                    """)
+        self.TableView.setFont(QFont("Arial", 12, 6, True))        
+        self.hidden = True
 
-    def IE_Check(self, int):                           # The function isCecked returns 1 or 0 that's why the int aux var value 
+        self.buttons_widget = QWidget(self.ClientsWindow)
+
+        self.buttons_layout = QHBoxLayout(self.buttons_widget) 
+
+        self.buttons_widget.setLayout(self.buttons_layout)
+
+        self.layout.addWidget(self.buttons_widget)        
+
+        self.CadastrarBtn = QPushButton("Cadastrar", self.buttons_widget)
+        self.CadastrarBtn.setFont(QFont("Arial", 14, 8, True))
+        self.CadastrarBtn.setStyleSheet("QPushButton {border-radius: 9px; background-color: #44a665; color :white; padding: 7px 14px;} QPushButton:hover {background-color: #5ac47e}")
+        self.CadastrarBtn.setAutoDefault(True)
+        self.CadastrarBtn.clicked.connect(self.Cadastrar)
+
+        self.buttons_layout.addWidget(self.CadastrarBtn, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.buttons_layout.addSpacing(-250)
+
+        self.TodosBtn = QPushButton("Ver Todos", self.buttons_widget)
+        self.TodosBtn.setFont(QFont("Arial", 14, 8, True))
+        self.TodosBtn.setStyleSheet("QPushButton {border-radius: 9px; background-color: #44a665; color :white; padding: 7px 14px;} QPushButton:hover {background-color: #5ac47e}")
+        self.TodosBtn.clicked.connect(self.VerTodos)
+
+        self.buttons_layout.addWidget(self.TodosBtn, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.buttons_layout.addSpacing(-250)
+
+        self.PrevBtn = QPushButton("<", self.buttons_widget)
+        self.PrevBtn.setFont(QFont("Arial", 14, 8, True))
+        self.PrevBtn.setStyleSheet("QPushButton {border-radius: 9px; background-color: #44a665; color :white; padding: 7px 14px;} QPushButton:hover {background-color: #5ac47e}")
+        self.PrevBtn.clicked.connect(self.Previous)
+
+        self.buttons_layout.addWidget(self.PrevBtn, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.buttons_layout.addSpacing(-400)
+
+        self.ClearBtn = QPushButton("limpar", self.buttons_widget)
+        self.ClearBtn.setFont(QFont("Arial", 14, 8, True))
+        self.ClearBtn.setStyleSheet("QPushButton {border-radius: 9px; background-color: #44a665; color :white; padding: 7px 14px;} QPushButton:hover {background-color: #5ac47e}")
+        self.ClearBtn.clicked.connect(self.Clear)
+
+        self.buttons_layout.addWidget(self.ClearBtn, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.buttons_layout.addSpacing(-350)
+
+        self.NextBtn = QPushButton(">", self.buttons_widget)
+        self.NextBtn.setFont(QFont("Arial", 14, 8, True))
+        self.NextBtn.setStyleSheet("QPushButton {border-radius: 9px; background-color: #44a665; color :white; padding: 7px 14px;} QPushButton:hover {background-color: #5ac47e}")
+        self.NextBtn.clicked.connect(self.Next)
+
+        self.buttons_layout.addWidget(self.NextBtn, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.buttons_layout.addSpacing(-350)
+
+        self.UpdateBtn = QPushButton("Modificar", self.buttons_widget)
+        self.UpdateBtn.setFont(QFont("Arial", 14, 8, True))
+        self.UpdateBtn.setStyleSheet("QPushButton {border-radius: 9px; background-color: #44a665; color :white; padding: 7px 14px;} QPushButton:hover {background-color: #5ac47e}")
+        self.UpdateBtn.clicked.connect(self.Modify)
+
+        self.buttons_layout.addWidget(self.UpdateBtn, alignment=Qt.AlignmentFlag.AlignLeft)
+
+        self.DelBtn = QPushButton("Deletar", self.buttons_widget)
+        self.DelBtn.setFont(QFont("Arial", 14, 8, True))
+        self.DelBtn.setStyleSheet("QPushButton {border-radius: 9px; background-color: #44a665; color :white; padding: 7px 14px;} QPushButton:hover {background-color: #5ac47e}")
+        self.DelBtn.clicked.connect(self.Deletar)
+
+        self.buttons_layout.addWidget(self.DelBtn, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.buttons_layout.addSpacing(-350)
+
+        self.IDdel = QLineEdit("id", self.buttons_widget)
+        self.IDdel.setFont(QFont("Arial", 14, 8, True))
+        self.IDdel.setMaximumWidth(50)
+        self.IDdel.setStyleSheet("QLineEdit {border-radius: 7px; background-color: white; color: black; padding: 7px 14px; border-width:1px; border-color: gray; border-style:solid;} QLineEdit:hover {border-radius: 7px; background-color: white; color: black; padding: 7px 14px; border-width:1px; border-color: #44a665; border-style:solid;}")
+
+        self.buttons_layout.addWidget(self.IDdel, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.buttons_layout.addSpacing(-350)
+
+# ============================================================ Del Function ============================================================
+
+
+    def Deletar(self):
+        self.IDInput = self.IDdel.text()
+        if not self.IDInput:
+            msg = QMessageBox()
+            msg.setText("Você precisa informar o ID (ao lado do botão) para deletar")
+            msg.setWindowTitle("User Error")
+            msg.exec()
+        else:
+            try:
+                service_id = 'xxxxxxxxxxxxx'
+                keyring.set_password(service_id, None, 'xxxxxxxxxxxxx')
+                password_key = keyring.get_password(service_id, None)
+
+                con = mc.connect(
+                        host="xxxxxxxxxxxxx",
+                        user="xxxxxxxxxxxxx",
+                        password=password_key,
+                        database="xxxxxxxxxxxxx"
+                    )
+
+                query = (f"DELETE FROM knowhow.cadastro_clientes_fornecedores WHERE ID = ({self.IDInput})")
+
+                cursor = con.cursor()
+                cursor.execute(query)
+                con.commit()
+                cursor.close()
+                con.close()
+                msg5 = QMessageBox()
+                msg5.setText("Dados Deletados com Sucesso")
+                msg5.setWindowTitle("msg")
+                msg5.exec()
+
+            except mc.Error as e:
+                msg = QMessageBox()
+                msg.setText(f"Falha ao deletar: {e}\n lembre-se de digitar o id")
+                msg.setWindowTitle("Busca")
+                msg.exec() 
+            
+            except Exception as b:
+                msg = QMessageBox()
+                msg.setText(f"Falha: {b}")
+                msg.setWindowTitle("Fail")
+                msg.exec() 
+
+
+# =========================================================== Clear function ===========================================================
+
+    def Clear(self):
+        self.IDdel.setText("")
+        self.nameedt.setText("")
+        self.fanedt.setText("")
+        self.personbox.setCurrentIndex(0)
+        self.cnpjedt.setText("")
+        self.cpfedt.setText("")
+        self.codebox.setCurrentIndex(0)
+        self.desdeedt.setText("")
+        self.contribbox.setCurrentIndex(0)
+        self.stateregedt.setText("")
+        self.cityregedt.setText("")
+        self.IEchck.setChecked(False)
+        self.RGEdt.setText("")
+        self.emissedt.setText("")
+        self.countryedt.setText("")
+        self.cepedt1.setText("")
+        self.statebox.setCurrentIndex(0)
+        self.cityedt.setText("")
+        self.bairroedt.setText("")
+        self.enderecoedt1.setText("")
+        self.numeroedt.setText("")
+        self.complementedt.setText("")
+        self.cepedt2.setText("")
+        self.statebox2.setCurrentIndex(0)
+        self.cityedt2.setText("")
+        self.bairroedt2.setText("")
+        self.enderecoedt2.setText("")
+        self.numeroedt2.setText("")
+        self.complementedt2.setText("")
+        self.foreign_state.setText("")
+        self.foreign_state2.setText("")
+        self.infoedt.setText("")
+        self.pessoasedt.setText("")
+        self.foneedt.setText("")
+        self.faxedt.setText("")
+        self.celedt.setText("")
+        self.celedt2.setText("")
+        self.emailedt.setText("")
+        self.emailedtnfe.setText("")
+        self.siteedt.setText("")
+        self.celedt3.setText("")
+        self.celedt4.setText("")
+        self.cargaedt.setText("")
+        self.contratoedt.setText("")
+        self.situation_box.setCurrentIndex(0)
+        self.VendEdt.setText("")
+        self.CondEdt.setText("")
+        self.InscrEdt.setText("")
+        self.piclbl2.setPixmap(self.picpix2)
+        self.CredEdt.setText("")
+        self.CondEdt.setText("")
+        self.CategoryEdt.setText("")
+        self.Comment.setText("")
+
+# =========================================================== Previous and Next ========================================================
+   
+    def Next(self):
+        self.IDInput = self.IDdel.text()
+        try:
+            service_id = 'xxxxxxxxxxxxx'
+            keyring.set_password(service_id, None, 'xxxxxxxxxxxxx')
+            password_key = keyring.get_password(service_id, None)
+
+            con = mc.connect(
+                    host="xxxxxxxxxxxxx",
+                    user="xxxxxxxxxxxxx",
+                    password=password_key,
+                    database="xxxxxxxxxxxxx"
+                )
+
+            query = f"SELECT * FROM knowhow.cadastro_clientes_fornecedores WHERE ID = (SELECT max(ID) FROM knowhow.cadastro_clientes_fornecedores WHERE ID > {self.IDInput})"
+
+            cursor = con.cursor()
+            cursor.execute(query)
+            result = cursor
+
+            for row_number, row_data in enumerate(result):
+                for column_number , data in enumerate(row_data):
+
+                    self.IDdel.setText(str(row_data[0]))
+                    self.nameedt.setText(str(row_data[1]))
+                    self.fanedt.setText(str(row_data[2]))
+                    self.personbox.setCurrentText(str(row_data[3]))
+                    self.cnpjedt.setText(str(row_data[4]))
+                    self.cpfedt.setText(str(row_data[5]))
+                    self.codebox.setCurrentText(str(row_data[6]))
+                    self.desdeedt.setText(str(row_data[7]))
+                    self.contribbox.setCurrentText(str(row_data[8]))
+                    self.stateregedt.setText(str(row_data[9]))
+                    self.cityregedt.setText(str(row_data[10]))
+                    if str(row_data[11]) == "Sim":
+                        self.IEchck.setChecked(True)
+                    else:
+                        self.IEchck.setChecked(False)
+                    self.RGEdt.setText(str(row_data[12]))
+                    self.emissedt.setText(str(row_data[13]))
+                    self.countryedt.setText(str(row_data[14]))
+                    self.cepedt1.setText(str(row_data[15]))
+                    self.statebox.setCurrentText(str(row_data[16]))
+                    self.cityedt.setText(str(row_data[17]))
+                    self.bairroedt.setText(str(row_data[18]))
+                    self.enderecoedt1.setText(str(row_data[19]))
+                    self.numeroedt.setText(str(row_data[20]))
+                    self.complementedt.setText(str(row_data[21]))
+                    self.cepedt2.setText(str(row_data[22]))
+                    self.statebox2.setCurrentText(str(row_data[23]))
+                    self.cityedt2.setText(str(row_data[24]))
+                    self.bairroedt2.setText(str(row_data[25]))
+                    self.enderecoedt2.setText(str(row_data[26]))
+                    self.numeroedt2.setText(str(row_data[27]))
+                    self.complementedt2.setText(str(row_data[28]))
+                    self.foreign_state.setText(str(row_data[29]))
+                    self.foreign_state2.setText(str(row_data[30]))
+                    self.infoedt.setText(str(row_data[31]))
+                    self.pessoasedt.setText(str(row_data[32]))
+                    self.foneedt.setText(str(row_data[33]))
+                    self.faxedt.setText(str(row_data[34]))
+                    self.celedt.setText(str(row_data[35]))
+                    self.celedt2.setText(str(row_data[36]))
+                    self.emailedt.setText(str(row_data[37]))
+                    self.emailedtnfe.setText(str(row_data[38]))
+                    self.siteedt.setText(str(row_data[39]))
+                    self.celedt3.setText(str(row_data[40]))
+                    self.celedt4.setText(str(row_data[41]))
+                    self.cargaedt.setText(str(row_data[42]))
+                    self.contratoedt.setText(str(row_data[43]))
+                    self.situation_box.setCurrentText(str(row_data[44]))
+                    self.VendEdt.setText(str(row_data[45]))
+                    self.CondEdt.setText(str(row_data[46]))
+                    self.InscrEdt.setText(str(row_data[47]))
+                    """
+                    a lógica aqui é o seguinte: pegar o caminho descrito no db
+                    tratá-lo e passá-lo como argumento do pixmap
+                    fazendo asism, aparecer o pixmap no label no local correto para cada registro
+                    """
+                    self.teste = row_data[48]
+                    self.y = str(self.teste)
+                    self.z = self.y.split("b")
+                    imagem = ""
+                    imagem = str(self.z[1]) # tratamento caminho da imagem
+                    imagem = imagem.split("b") # forma uma lista
+                    imagex = ""
+                    imagex = imagem[0]
+                    imagex = imagex.replace("'", "") # caminho tratado
+                    if str(row_data[48]) != "None":
+                        self.pic_pixmap = QPixmap(imagex) # exibir imagem a parir do path tratado
+                        self.pic_pixmap2 = self.pic_pixmap.scaledToWidth(80) # fixa tamanho imagem para 80 pixel
+                        self.piclbl2.setPixmap(QPixmap(self.pic_pixmap2))
+                        self.piclbl2.resize(20, 20)
+                        print("1442 Entrou na funcao exibir imagem")
+            
+                    else:
+                        print("none img")
+                    self.CredEdt.setText(str(row_data[49]))
+                    self.CondEdt.setText(str(row_data[50]))
+                    self.CategoryEdt.setText(str(row_data[51]))
+                    self.Comment.setText(str(row_data[52]))
+
+        except:
+            msg = QMessageBox()
+            msg.setText("você está tentando acessar um registro inexistente")
+            msg.setWindowTitle("Fail")
+            msg.exec()
+            print("você está tentando acessar um registro inexistente")
+            pass
+
+    def Previous(self):
+        self.IDInput = self.IDdel.text()
+        try:
+            service_id = 'xxxxxxxxxxxxx'
+            keyring.set_password(service_id, None, 'xxxxxxxxxxxxx')
+            password_key = keyring.get_password(service_id, None)
+
+            con = mc.connect(
+                    host="xxxxxxxxxxxxx",
+                    user="xxxxxxxxxxxxx",
+                    password=password_key,
+                    database="xxxxxxxxxxxxx"
+                )
+
+            query = f"SELECT * FROM knowhow.cadastro_clientes_fornecedores WHERE ID = (SELECT max(ID) FROM knowhow.cadastro_clientes_fornecedores WHERE ID < {self.IDInput})"
+
+            cursor = con.cursor()
+            cursor.execute(query)
+            result = cursor
+
+            for row_number, row_data in enumerate(result):
+                for column_number , data in enumerate(row_data):
+
+                    self.IDdel.setText(str(row_data[0]))
+                    self.nameedt.setText(str(row_data[1]))
+                    self.fanedt.setText(str(row_data[2]))
+                    self.personbox.setCurrentText(str(row_data[3]))
+                    self.cnpjedt.setText(str(row_data[4]))
+                    self.cpfedt.setText(str(row_data[5]))
+                    self.codebox.setCurrentText(str(row_data[6]))
+                    self.desdeedt.setText(str(row_data[7]))
+                    self.contribbox.setCurrentText(str(row_data[8]))
+                    self.stateregedt.setText(str(row_data[9]))
+                    self.cityregedt.setText(str(row_data[10]))
+                    if str(row_data[11]) == "Sim":
+                        self.IEchck.setChecked(True)
+                    else:
+                        self.IEchck.setChecked(False)
+                    self.RGEdt.setText(str(row_data[12]))
+                    self.emissedt.setText(str(row_data[13]))
+                    self.countryedt.setText(str(row_data[14]))
+                    self.cepedt1.setText(str(row_data[15]))
+                    self.statebox.setCurrentText(str(row_data[16]))
+                    self.cityedt.setText(str(row_data[17]))
+                    self.bairroedt.setText(str(row_data[18]))
+                    self.enderecoedt1.setText(str(row_data[19]))
+                    self.numeroedt.setText(str(row_data[20]))
+                    self.complementedt.setText(str(row_data[21]))
+                    self.cepedt2.setText(str(row_data[22]))
+                    self.statebox2.setCurrentText(str(row_data[23]))
+                    self.cityedt2.setText(str(row_data[24]))
+                    self.bairroedt2.setText(str(row_data[25]))
+                    self.enderecoedt2.setText(str(row_data[26]))
+                    self.numeroedt2.setText(str(row_data[27]))
+                    self.complementedt2.setText(str(row_data[28]))
+                    self.foreign_state.setText(str(row_data[29]))
+                    self.foreign_state2.setText(str(row_data[30]))
+                    self.infoedt.setText(str(row_data[31]))
+                    self.pessoasedt.setText(str(row_data[32]))
+                    self.foneedt.setText(str(row_data[33]))
+                    self.faxedt.setText(str(row_data[34]))
+                    self.celedt.setText(str(row_data[35]))
+                    self.celedt2.setText(str(row_data[36]))
+                    self.emailedt.setText(str(row_data[37]))
+                    self.emailedtnfe.setText(str(row_data[38]))
+                    self.siteedt.setText(str(row_data[39]))
+                    self.celedt3.setText(str(row_data[40]))
+                    self.celedt4.setText(str(row_data[41]))
+                    self.cargaedt.setText(str(row_data[42]))
+                    self.contratoedt.setText(str(row_data[43]))
+                    self.situation_box.setCurrentText(str(row_data[44]))
+                    self.VendEdt.setText(str(row_data[45]))
+                    self.CondEdt.setText(str(row_data[46]))
+                    self.InscrEdt.setText(str(row_data[47]))
+                    """
+                    a lógica aqui é o seguinte: pegar o caminho descrito no db
+                    tratá-lo e passá-lo como argumento do pixmap
+                    fazendo asism, aparecer o pixmap no label no local correto para cada registro
+                    """
+                    self.teste = row_data[48]
+                    self.y = str(self.teste)
+                    self.z = self.y.split("b")
+                    imagem = ""
+                    imagem = str(self.z[1]) # tratamento caminho da imagem
+                    imagem = imagem.split("b") # forma uma lista
+                    imagex = ""
+                    imagex = imagem[0]
+                    imagex = imagex.replace("'", "") # caminho tratado
+                    if str(row_data[48]) != "None":
+                        self.pic_pixmap = QPixmap(imagex) # exibir imagem a parir do path tratado
+                        self.pic_pixmap2 = self.pic_pixmap.scaledToWidth(80) # fixa tamanho imagem para 80 pixel
+                        self.piclbl2.setPixmap(QPixmap(self.pic_pixmap2))
+                        self.piclbl2.resize(20, 20)
+                        print("1442 Entrou na funcao exibir imagem")
+            
+                    else:
+                        print("none img")
+                    self.CredEdt.setText(str(row_data[49]))
+                    self.CondEdt.setText(str(row_data[50]))
+                    self.CategoryEdt.setText(str(row_data[51]))
+                    self.Comment.setText(str(row_data[52]))
+
+        except:
+            msg = QMessageBox()
+            msg.setText("você está tentando acessar um registro inexistente")
+            msg.setWindowTitle("Fail")
+            msg.exec()
+            print("você está tentando acessar um registro inexistente")
+            pass
+
+     
+# =========================================================== Modify (Update) ==============================================================
+
+
+    def Modify(self):
+        self.IDInput = self.IDdel.text()
+        self.NomeInput = self.nameedt.text()
+        self.FantasyInput = self.fanedt.text()
+        self.KindInput = str(self.personbox.currentText())
+        self.CNPJInput = self.cnpjedt.text()
+        self.CPFInput = self.cpfedt.text()
+        self.RegimeInput = str(self.codebox.currentText())
+        self.SinceInput = self.desdeedt.text()
+        self.ContribInput = str(self.contribbox.currentText())
+        self.IEInput = self.stateregedt.text()
+        self.IMInput = self.cityregedt.text()
+        if self.IEchck.isChecked():
+            self.IEChkInput = "Sim"
+        else:
+            self.IEChkInput = "Não"
+        self.RGInput = self.RGEdt.text()
+        self.OrgaoInput = self.emissedt.text()
+        self.CountryInput = self.countryedt.text()
+        self.CEPInput = self.cepedt1.text()
+        self.UFInput = str(self.statebox.currentText())
+        self.CityInput = self.cityedt.text()
+        self.HoodInput = self.bairroedt.text()
+        self.StreetInput = self.enderecoedt1.text()
+        self.NumInput = self.numeroedt.text()
+        self.ComplInput = self.complementedt.text()
+        self.CEPInput2 = self.cepedt2.text()
+        self.UFInput2 = str(self.statebox2.currentText())
+        self.CityInput2 = self.cityedt2.text()
+        self.HoodInput2 = self.bairroedt2.text()
+        self.StreetInput2 = self.enderecoedt2.text()
+        self.NumInput2 = self.numeroedt2.text()
+        self.ComplInput2 = self.complementedt2.text()
+        self.EstrangeiroInput = self.foreign_state.text()
+        self.EstrangeiroInput2 = self.foreign_state2.text()
+        self.ContactInfoInput = self.infoedt.text()
+        self.PeopleInput = self.pessoasedt.text()
+        self.FoneInput = self.foneedt.text()
+        self.FAXInput = self.faxedt.text()
+        self.Cel1Input = self.celedt.text()
+        self.Cel2Input = self.celedt2.text()
+        self.EmailInput = self.emailedt.text()
+        self.NFeInput = self.emailedtnfe.text()
+        self.SiteInput = self.siteedt.text()
+        self.Cel3Input = self.celedt3.text()
+        self.Cel4Input = self.celedt4.text()
+        self.CargaInput = self.cargaedt.text()
+        self.ContrTypeInput = self.contratoedt.text()
+        self.SituacaoInput = str(self.situation_box.currentText())
+        self.SellerInput = self.VendEdt.text()
+        self.CondInput = self.CondEdt.text()
+        self.SuframaInput = self.InscrEdt.text()
+        try:
+            self.teste = row_data[48]
+            self.y = str(self.teste)
+            self.z = self.y.split("b")
+            imagem = ""
+            imagem = str(self.z[1]) # tratamento caminho da imagem
+            imagem = imagem.split("b") # forma uma lista
+            imagex = ""
+            imagex = imagem[0]
+            imagex = imagex.replace("'", "") # caminho tratado
+            if str(row_data[48]) != "None":
+                self.pic_pixmap = QPixmap(imagex) # exibir imagem a parir do path tratado
+                self.pic_pixmap2 = self.pic_pixmap.scaledToWidth(80) # fixa tamanho imagem para 80 pixel
+                self.piclbl2.setPixmap(QPixmap(self.pic_pixmap2))
+                self.piclbl2.resize(20, 20)
+                print("1442 Entrou na funcao exibir imagem")
+            
+            else:
+                print("none img")
+                try:
+                    self.ImgInput = None
+                except:
+                    self.ImgInput = "None"
+        except:
+            try:
+                self.ImgInput = None
+            except:
+                self.ImgInput = "None"
+        
+        self.LimitInput = self.CredEdt.text()
+        self.CondInput = self.CondEdt.text()
+        self.CategoryInput = self.CategoryEdt.text()
+        self.OBSInput = self.Comment.toPlainText()
+        try:
+            service_id = 'xxxxxxxxxxxxx'
+            keyring.set_password(service_id, None, 'xxxxxxxxxxxxx')
+            password_key = keyring.get_password(service_id, None)
+
+            con = mc.connect(
+                    host="1xxxxxxxxxxxxx",
+                    user="xxxxxxxxxxxxx",
+                    password=password_key,
+                    database="xxxxxxxxxxxxx"
+                )
+
+            query = f"""UPDATE knowhow.cadastro_clientes_fornecedores
+            SET
+                Nome = '{self.NomeInput}',
+                Fantasia = '{self.FantasyInput}',
+                TipoPessoa = '{self.KindInput}',
+                CNPJ = '{self.CNPJInput}',
+                CPF = '{self.CPFInput}',
+                RegimeTributario = '{self.RegimeInput}',
+                ClienteDesde = '{self.SinceInput}',
+                Contribuinte = '{self.ContribInput}',
+                InscricaoEstadual = '{self.IEInput}',
+                InscricaoMunicipal = '{self.IMInput}',
+                IEIsento = '{self.IEChkInput}',
+                RG = '{self.RGInput}',
+                OrgaoEmissor = '{self.OrgaoInput}', 
+                Pais = '{self.CountryInput}', 
+                CEP = '{self.CEPInput}', 
+                UF = '{self.UFInput}', 
+                Cidade = '{self.CityInput}', 
+                Bairro = '{self.HoodInput}', 
+                Endereco = '{self.StreetInput}',
+                Numero = '{self.NumInput}',
+                Complemento = '{self.ComplInput}',
+                CEP2 = '{self.CEPInput2}',
+                UF2 = '{self.UFInput2}',
+                Cidade2 = '{self.CityInput2}',
+                Bairro2 = '{self.HoodInput2}',
+                Endereco2 = '{self.StreetInput2}',
+                Numero2 = '{self.NumInput2}',
+                Complemento2 = '{self.ComplInput2}',
+                Estrangeiro = '{self.EstrangeiroInput}',
+                Estrangeiro2 = '{self.EstrangeiroInput2}',
+                ContactInfo = '{self.ContactInfoInput}',
+                PessoasDeContato = '{self.PeopleInput}',
+                Fone = '{self.FoneInput}',
+                Fax = '{self.FAXInput}',
+                Celular = '{self.Cel1Input}',
+                Celular2 = '{self.Cel2Input}',
+                Email = '{self.EmailInput}',
+                EmailNfe = '{self.NFeInput}',
+                WebSite = '{self.SiteInput}',
+                Celular3 = '{self.Cel3Input}',
+                Celular4 = '{self.Cel4Input}',
+                CargaMedia = '{self.CargaInput}',
+                TipoContrato = '{self.ContrTypeInput}',
+                Situacao = '{self.SituacaoInput}',
+                Vendedor = '{self.SellerInput}',
+                NaturezaOperacao = '{self.CondInput}',
+                InscricaoSuframa = '{self.SuframaInput}',
+                Image = '{self.ImgInput}',
+                LimiteCredito = '{self.LimitInput}',
+                CondicaoPagament = '{self.CondInput}',
+                Categoria = '{self.CategoryInput}',
+                Observacoes = '{self.OBSInput}'
+            WHERE
+                ID = '{self.IDInput}';
+            """
+
+            cursor = con.cursor()
+            cursor.execute(query)
+            con.commit()
+            cursor.close()
+            con.close()
+            msg = QMessageBox()
+            msg.setText("Atualizado com Sucesso")
+            msg.setWindowTitle("Modify/Update")
+            msg.exec()
+
+
+        except Exception as e:
+            msg = QMessageBox()
+            msg.setText(f"exceção: {e}")
+            msg.setWindowTitle("Modify")
+            msg.exec()
+
+
+#==================================================== Ver Todos ========================================================================
+    def VerTodos(self):
+        try:
+            service_id = 'xxxxxxxxxxxxx'
+            keyring.set_password(service_id, None, 'xxxxxxxxxxxxx')
+            password_key = keyring.get_password(service_id, None)
+
+            con = mc.connect(
+                    host="xxxxxxxxxxxxx",
+                    user="xxxxxxxxxxxxx",
+                    password=password_key,
+                    database="xxxxxxxxxxxxx"
+                )
+
+            query = "SELECT * FROM knowhow.cadastro_clientes_fornecedores"
+            cursor = con.cursor()
+            cursor.execute(query)
+            result = cursor.fetchall()
+
+            self.TableView.setRowCount(0)
+
+            for row_number, row_data in enumerate(result):
+                self.TableView.insertRow(row_number)
+                for column_number , data in enumerate(row_data):
+                    if column_number == 0:
+                        self.item = QTableWidgetItem(f"{row_data[0]}") # ID together with checkbox
+                        self.item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
+                        self.item.setCheckState(Qt.CheckState.Unchecked)
+                        self.TableView.setItem(row_number, column_number, self.item)                     
+                    else:
+                        self.TableView.setItem(row_number, column_number, QTableWidgetItem(str(data)))                    
+            
+
+            
+        except mc.Error as e:
+            msg = QMessageBox()
+            msg.setText(f"Falha ao buscar: {e}")
+            msg.setWindowTitle("Busca")
+            msg.exec()
+
+        except Exception as b:
+            msg = QMessageBox()
+            msg.setText(f"Falha: {b}")
+            msg.setWindowTitle("Fail")
+            msg.exec()
+
+        self.TableView.resizeRowsToContents()
+        self.TableView.resizeColumnsToContents()
+        self.TableView.setColumnWidth(0, 70)
+        self.TableView.show()
+
+        print(str(row_data))
+        self.IDdel.setText(str(row_data[0]))
+        self.nameedt.setText(str(row_data[1]))
+        self.fanedt.setText(str(row_data[2]))
+        self.personbox.setCurrentText(str(row_data[3]))
+        self.cnpjedt.setText(str(row_data[4]))
+        self.cpfedt.setText(str(row_data[5]))
+        self.codebox.setCurrentText(str(row_data[6]))
+        self.desdeedt.setText(str(row_data[7]))
+        self.contribbox.setCurrentText(str(row_data[8]))
+        self.stateregedt.setText(str(row_data[9]))
+        self.cityregedt.setText(str(row_data[10]))
+        if str(row_data[11]) == "Sim":
+            self.IEchck.setChecked(True)
+        else:
+            self.IEchck.setChecked(False)
+        self.RGEdt.setText(str(row_data[12]))
+        self.emissedt.setText(str(row_data[13]))
+        self.countryedt.setText(str(row_data[14]))
+        self.cepedt1.setText(str(row_data[15]))
+        self.statebox.setCurrentText(str(row_data[16]))
+        self.cityedt.setText(str(row_data[17]))
+        self.bairroedt.setText(str(row_data[18]))
+        self.enderecoedt1.setText(str(row_data[19]))
+        self.numeroedt.setText(str(row_data[20]))
+        self.complementedt.setText(str(row_data[21]))
+        self.cepedt2.setText(str(row_data[22]))
+        self.statebox2.setCurrentText(str(row_data[23]))
+        self.cityedt2.setText(str(row_data[24]))
+        self.bairroedt2.setText(str(row_data[25]))
+        self.enderecoedt2.setText(str(row_data[26]))
+        self.numeroedt2.setText(str(row_data[27]))
+        self.complementedt2.setText(str(row_data[28]))
+        self.foreign_state.setText(str(row_data[29]))
+        self.foreign_state2.setText(str(row_data[30]))
+        self.infoedt.setText(str(row_data[31]))
+        self.pessoasedt.setText(str(row_data[32]))
+        self.foneedt.setText(str(row_data[33]))
+        self.faxedt.setText(str(row_data[34]))
+        self.celedt.setText(str(row_data[35]))
+        self.celedt2.setText(str(row_data[36]))
+        self.emailedt.setText(str(row_data[37]))
+        self.emailedtnfe.setText(str(row_data[38]))
+        self.siteedt.setText(str(row_data[39]))
+        self.celedt3.setText(str(row_data[40]))
+        self.celedt4.setText(str(row_data[41]))
+        self.cargaedt.setText(str(row_data[42]))
+        self.contratoedt.setText(str(row_data[43]))
+        self.situation_box.setCurrentText(str(row_data[44]))
+        self.VendEdt.setText(str(row_data[45]))
+        self.CondEdt.setText(str(row_data[46]))
+        self.InscrEdt.setText(str(row_data[47]))
+        """
+        a lógica aqui é o seguinte: pegar o caminho descrito no db
+        tratá-lo e passá-lo como argumento do pixmap
+        fazendo asism, aparecer o pixmap no label no local correto para cada registro
+        """
+        self.teste = row_data[48]
+        self.y = str(self.teste)
+        self.z = self.y.split("b")
+        imagem = ""
+        imagem = str(self.z[1]) # tratamento caminho da imagem
+        imagem = imagem.split("b") # forma uma lista
+        imagex = ""
+        imagex = imagem[0]
+        imagex = imagex.replace("'", "") # caminho tratado
+        if str(row_data[48]) != "None":
+            self.pic_pixmap = QPixmap(imagex) # exibir imagem a parir do path tratado
+            self.pic_pixmap2 = self.pic_pixmap.scaledToWidth(80) # fixa tamanho imagem para 80 pixel
+            self.piclbl2.setPixmap(QPixmap(self.pic_pixmap2))
+            self.piclbl2.resize(20, 20)
+            print("1442 Entrou na funcao exibir imagem")
+            
+        else:
+            print("none img")
+        self.CredEdt.setText(str(row_data[49]))
+        self.CondEdt.setText(str(row_data[50]))
+        self.CategoryEdt.setText(str(row_data[51]))
+        self.Comment.setText(str(row_data[52]))
+
+
+#=========================================================== Buscar Imagem Pasta ===============================================================
+    def Browse_Image(self):
+        self.fname = QFileDialog.getOpenFileName(self, "Open File", "C\\", "Image Files (*.jpg *.png)")
+        self.fnamepath = self.fname[0]
+        print(self.fnamepath)
+
+        self.pic_pixmap = QPixmap(self.fnamepath)
+        self.pic_pixmap2 = self.pic_pixmap.scaledToWidth(80)
+        self.piclbl2.setPixmap(QPixmap(self.pic_pixmap2))
+        self.piclbl2.resize(20, 20)
+
+#=========================================================== Cadastro de clientes e fornecedores ================================================
+
+    def Cadastrar(self):
+        self.NomeInput = self.nameedt.text()
+        try:
+            service_id = 'xxxxxxxxxxxxx'
+            keyring.set_password(service_id, None, 'xxxxxxxxxxxxx')
+            password_key = keyring.get_password(service_id, None)
+
+            con = mc.connect(
+                    host="xxxxxxxxxxxxx",
+                    user="xxxxxxxxxxxxx",
+                    password=password_key,
+                    database="xxxxxxxxxxxxx"
+                )
+            query = f"SELECT Nome FROM knowhow.cadastro_clientes_fornecedores WHERE Nome='{self.NomeInput}'"
+            cursor = con.cursor()
+            cursor.execute(query)
+            result = cursor.fetchall()
+
+            if self.NomeInput == "":
+                pass
+            elif self.NomeInput == (str(result[0][0])):
+                print("já existe")
+                msg = QMessageBox()
+                msg.setText("Já existe um nome com esse valor!")
+                msg.setWindowTitle("Duplicity Verifier")
+                msg.exec()
+                return
+            con.close()
+
+        except Exception as e:
+            msg = QMessageBox()
+            msg.setText(f"Pode proceder, esse valor de nome não existe")
+            msg.setWindowTitle("Duplicity Verifier")
+            msg.exec()
+            print(e)
+        
+        self.CNPJInput  = self.cnpjedt.text()
+        try:
+            service_id = 'xxxxxxxxxxxxx'
+            keyring.set_password(service_id, None, 'xxxxxxxxxxxxx')
+            password_key = keyring.get_password(service_id, None)
+
+            con = mc.connect(
+                    host="xxxxxxxxxxxxx",
+                    user="xxxxxxxxxxxxx",
+                    password=password_key,
+                    database="xxxxxxxxxxxxx"
+                )
+            query = f"SELECT CNPJ FROM knowhow.cadastro_clientes_fornecedores WHERE CNPJ='{self.CNPJInput}'"
+            cursor = con.cursor()
+            cursor.execute(query)
+            result = cursor.fetchall()
+
+            if self.CNPJInput == "../-":
+                pass
+            elif self.CNPJInput == "":
+                pass
+            elif self.CNPJInput == (str(result[0][0])):
+                print("já existe")
+                msg = QMessageBox()
+                msg.setText("Já existe um CNPJ com esse valor!")
+                msg.setWindowTitle("Duplicity Verifier")
+                msg.exec()
+                return
+            con.close()
+
+        except Exception as e:
+            msg = QMessageBox()
+            msg.setText(f"Pode proceder, esse valor de cnpj não existe")
+            msg.setWindowTitle("Duplicity Verifier")
+            msg.exec()
+            print(e)
+
+        self.CPFInput = self.cpfedt.text()
+        try:
+            service_id = 'xxxxxxxxxxxxx'
+            keyring.set_password(service_id, None, 'xxxxxxxxxxxxx')
+            password_key = keyring.get_password(service_id, None)
+
+            con = mc.connect(
+                    host="xxxxxxxxxxxxx",
+                    user="xxxxxxxxxxxxx",
+                    password=password_key,
+                    database="xxxxxxxxxxxxx"
+                )
+            query = f"SELECT CPF FROM knowhow.cadastro_clientes_fornecedores WHERE CPF='{self.CPFInput}'"
+            cursor = con.cursor()
+            cursor.execute(query)
+            result = cursor.fetchall()
+
+            if self.CPFInput == "":
+                pass
+            elif self.CPFInput == "..-":
+                pass
+            elif self.CPFInput == (str(result[0][0])):
+                print("já existe")
+                msg = QMessageBox()
+                msg.setText("Já existe um CPF com esse valor!")
+                msg.setWindowTitle("Duplicity Verifier")
+                msg.exec()
+                return
+            con.close()
+
+        except Exception as e:
+            msg = QMessageBox()
+            msg.setText(f"Pode proceder, esse valor de CPF não existe")
+            msg.setWindowTitle("Duplicity Verifier")
+            msg.exec()
+            print(e)
+
+        self.NomeInput = self.nameedt.text()
+        self.FantasyInput = self.fanedt.text()
+        self.KindInput = str(self.personbox.currentText())
+        self.CNPJInput = self.cnpjedt.text()
+        self.CPFInput = self.cpfedt.text()
+        self.RegimeInput = str(self.codebox.currentText())
+        self.SinceInput = self.desdeedt.text()
+        self.ContribInput = str(self.contribbox.currentText())
+        self.IEInput = self.stateregedt.text()
+        self.IMInput = self.cityregedt.text()
+        if self.IEchck.isChecked():
+            self.IEChkInput = "Sim"
+        else:
+            self.IEChkInput = "Não"
+        self.RGInput = self.RGEdt.text()
+        self.OrgaoInput = self.emissedt.text()
+        self.CountryInput = self.countryedt.text()
+        self.CEPInput = self.cepedt1.text()
+        self.UFInput = str(self.statebox.currentText())
+        self.CityInput = self.cityedt.text()
+        self.HoodInput = self.bairroedt.text()
+        self.StreetInput = self.enderecoedt1.text()
+        self.NumInput = self.numeroedt.text()
+        self.ComplInput = self.complementedt.text()
+        self.CEPInput2 = self.cepedt2.text()
+        self.UFInput2 = str(self.statebox2.currentText())
+        self.CityInput2 = self.cityedt2.text()
+        self.HoodInput2 = self.bairroedt2.text()
+        self.StreetInput2 = self.enderecoedt2.text()
+        self.NumInput2 = self.numeroedt2.text()
+        self.ComplInput2 = self.complementedt2.text()
+        self.EstrangeiroInput = self.foreign_state.text()
+        self.EstrangeiroInput2 = self.foreign_state2.text()
+        self.ContactInfoInput = self.infoedt.text()
+        self.PeopleInput = self.pessoasedt.text()
+        self.FoneInput = self.foneedt.text()
+        self.FAXInput = self.faxedt.text()
+        self.Cel1Input = self.celedt.text()
+        self.Cel2Input = self.celedt2.text()
+        self.EmailInput = self.emailedt.text()
+        self.NFeInput = self.emailedtnfe.text()
+        self.SiteInput = self.siteedt.text()
+        self.Cel3Input = self.celedt3.text()
+        self.Cel4Input = self.celedt4.text()
+        self.CargaInput = self.cargaedt.text()
+        self.ContrTypeInput = self.contratoedt.text()
+        self.SituacaoInput = str(self.situation_box.currentText())
+        self.SellerInput = self.VendEdt.text()
+        self.CondInput = self.CondEdt.text()
+        self.SuframaInput = self.InscrEdt.text()
+        self.ImgInput = self.fnamepath
+        self.LimitInput = self.CredEdt.text()
+        self.CondInput = self.CondEdt.text()
+        self.CategoryInput = self.CategoryEdt.text()
+        self.OBSInput = self.Comment.toPlainText()
+        try:
+            service_id = 'xxxxxxxxxxxxx'
+            keyring.set_password(service_id, None, 'xxxxxxxxxxxxx')
+            password_key = keyring.get_password(service_id, None)
+
+            con = mc.connect(
+                    host="xxxxxxxxxxxxx",
+                    user="xxxxxxxxxxxxx",
+                    password=password_key,
+                    database="xxxxxxxxxxxxx"
+                )
+            query = f"""
+                    INSERT INTO knowhow.cadastro_clientes_fornecedores (
+                    Nome, Fantasia, TipoPessoa, CNPJ, CPF, 
+                    RegimeTributario, ClienteDesde, Contribuinte, InscricaoEstadual, InscricaoMunicipal,
+                    IEIsento, RG, OrgaoEmissor, Pais, CEP,
+                    UF, Cidade, Bairro, Endereco, Numero,
+                    Complemento, CEP2, UF2, Cidade2, Bairro2,
+                    Endereco2, Numero2, Complemento2, Estrangeiro, Estrangeiro2,
+                    ContactInfo, PessoasDeContato, Fone, Fax, Celular,
+                    Celular2, Email, EmailNfe, WebSite, Celular3,
+                    Celular4, CargaMedia, TipoContrato, Situacao, Vendedor,
+                    NaturezaOperacao, InscricaoSuframa, Image, LimiteCredito, CondicaoPagament,
+                    Categoria, Observacoes
+                    ) VALUES (
+                    '{self.NomeInput}', '{self.FantasyInput}', '{self.KindInput}', '{self.CNPJInput}', '{self.CPFInput}', 
+                    '{self.RegimeInput}', '{self.SinceInput}', '{self.ContribInput}', '{self.IEInput}', '{self.IMInput}',
+                    '{self.IEChkInput}', '{self.RGInput}', '{self.OrgaoInput}', '{self.CountryInput}', '{self.CEPInput}',
+                    '{self.UFInput}', '{self.CityInput}', '{self.HoodInput}', '{self.StreetInput}', '{self.NumInput}',
+                    '{self.ComplInput}', '{self.CEPInput2}', '{self.UFInput2}', '{self.CityInput2}', '{self.HoodInput2}',
+                    '{self.StreetInput2}', '{self.NumInput2}', '{self.ComplInput2}', '{self.EstrangeiroInput}', '{self.EstrangeiroInput2}',
+                    '{self.ContactInfoInput}', '{self.PeopleInput}', '{self.FoneInput}', '{self.FAXInput}', '{self.Cel1Input}',
+                    '{self.Cel2Input}', '{self.EmailInput}', '{self.NFeInput}', '{self.SiteInput}', '{self.Cel3Input}',
+                    '{self.Cel4Input}', '{self.CargaInput}', '{self.ContrTypeInput}', '{self.SituacaoInput}', '{self.SellerInput}',
+                    '{self.CondInput}', '{self.SuframaInput}','{self.ImgInput}', '{self.LimitInput}', '{self.CondInput}',
+                    '{self.CategoryInput}', '{self.OBSInput}'
+                    );
+                """
+
+            cursor = con.cursor()
+            cursor.execute(query)
+            con.commit()
+            cursor.close()
+            con.close()
+            msg = QMessageBox()
+            msg.setText("Cadastrado com sucesso!")
+            msg.setWindowTitle("Cadastro")
+            msg.exec()
+
+        except mc.Error as e:
+            msg = QMessageBox()
+            msg.setText(f"Falha ao cadatrar: {e}")
+            msg.setWindowTitle("Cadastro")
+            msg.exec()
+
+        except Exception as b:
+            print(b)
+            msg = QMessageBox()
+            msg.setText(f"Falha: {b}\nErro de Usuário")
+            msg.setWindowTitle("Fail")
+            msg.exec()
+
+#============================================================ Busca por CEP ==================================================================
+
+    def BuscaCep1(self):
+        self.CEPInput1 = self.cepedt1.text()
+        print(self.CEPInput1)
+
+        data = {}
+
+        try:
+
+
+            instance = viacep.ViaCep()
+
+            data = instance.GetData(self.CEPInput1)
+
+            bairro = data.get("bairro")
+            cidade = data.get("localidade")
+            rua = data.get("logradouro")
+            estado = data.get("uf")
+            complemento = data.get("complemento")
+
+            self.enderecoedt1.setText(rua)
+            self.bairroedt.setText(bairro)
+            self.cityedt.setText(cidade)
+            self.complementedt.setText(complemento)
+            self.index = self.statebox.findText(estado)
+            if self.index >= 0:
+                self.statebox.setCurrentIndex(self.index)
+
+        except Exception as n:
+            print(n)
+            msg = QMessageBox()
+            msg.setText("API Fora do Ar\nTente novamente mais tarde")
+            msg.setWindowTitle("Fail")
+            msg.exec()
+            pass
+
+
+#===================================================== Uso dos checkboxes =============================================================
+
+
+    def retrieve_checkbox_linha(self):
+        for row_number in range(self.TableView.rowCount()):
+            try:
+                if self.TableView.item(row_number, 0).checkState() == Qt.CheckState.Checked:
+                    dados = ([self.TableView.item(row_number, column_number).text() for column_number in range(self.TableView.columnCount())])
+                    print(dados)
+                    self.IDdel.setText(str(dados[0]))
+                    self.nameedt.setText(str(dados[1]))
+                    self.fanedt.setText(str(dados[2]))
+                    self.personbox.setCurrentText(str(dados[3]))
+                    self.cnpjedt.setText(str(dados[4]))
+                    self.cpfedt.setText(str(dados[5]))
+                    self.codebox.setCurrentText(str(dados[6]))
+                    self.desdeedt.setText(str(dados[7]))
+                    self.contribbox.setCurrentText(str(dados[8]))
+                    self.stateregedt.setText(str(dados[9]))
+                    self.cityregedt.setText(str(dados[10]))
+                    if str(dados[11]) == "Sim":
+                        self.IEchck.setChecked(True)
+                    else:
+                        self.IEchck.setChecked(False)
+                    self.RGEdt.setText(str(dados[12]))
+                    self.emissedt.setText(str(dados[13]))
+                    self.countryedt.setText(str(dados[14]))
+                    self.cepedt1.setText(str(dados[15]))
+                    self.statebox.setCurrentText(str(dados[16]))
+                    self.cityedt.setText(str(dados[17]))
+                    self.bairroedt.setText(str(dados[18]))
+                    self.enderecoedt1.setText(str(dados[19]))
+                    self.numeroedt.setText(str(dados[20]))
+                    self.complementedt.setText(str(dados[21]))
+                    self.cepedt2.setText(str(dados[22]))
+                    self.statebox2.setCurrentText(str(dados[23]))
+                    self.cityedt2.setText(str(dados[24]))
+                    self.bairroedt2.setText(str(dados[25]))
+                    self.enderecoedt2.setText(str(dados[26]))
+                    self.numeroedt2.setText(str(dados[27]))
+                    self.complementedt2.setText(str(dados[28]))
+                    self.foreign_state.setText(str(dados[29]))
+                    self.foreign_state2.setText(str(dados[30]))
+                    self.infoedt.setText(str(dados[31]))
+                    self.pessoasedt.setText(str(dados[32]))
+                    self.foneedt.setText(str(dados[33]))
+                    self.faxedt.setText(str(dados[34]))
+                    self.celedt.setText(str(dados[35]))
+                    self.celedt2.setText(str(dados[36]))
+                    self.emailedt.setText(str(dados[37]))
+                    self.emailedtnfe.setText(str(dados[38]))
+                    self.siteedt.setText(str(dados[39]))
+                    self.celedt3.setText(str(dados[40]))
+                    self.celedt4.setText(str(dados[41]))
+                    self.cargaedt.setText(str(dados[42]))
+                    self.contratoedt.setText(str(dados[43]))
+                    self.situation_box.setCurrentText(str(dados[44]))
+                    self.VendEdt.setText(str(dados[45]))
+                    self.CondEdt.setText(str(dados[46]))
+                    self.InscrEdt.setText(str(dados[47]))
+                    """
+                    a lógica aqui é o seguinte: pegar o caminho descrito no db
+                    tratá-lo e passá-lo como argumento do pixmap
+                    fazendo asism, aparecer o pixmap no label no local correto para cada registro
+                    """
+                    self.teste = dados[48]
+                    self.y = str(self.teste)
+                    self.z = self.y.split("b")
+                    imagem = ""
+                    imagem = str(self.z[1]) # tratamento caminho da imagem
+                    imagem = imagem.split("b") # forma uma lista
+                    imagex = ""
+                    imagex = imagem[0]
+                    imagex = imagex.replace("'", "") # caminho tratado
+                    if str(dados[48]) != "None":
+                        self.pic_pixmap = QPixmap(imagex) # exibir imagem a parir do path tratado
+                        self.pic_pixmap2 = self.pic_pixmap.scaledToWidth(80) # fixa tamanho imagem para 80 pixel
+                        self.piclbl2.setPixmap(QPixmap(self.pic_pixmap2))
+                        self.piclbl2.resize(20, 20)
+                        print("1883 Entrou na funcao exibir imagem")
+                    else:
+                        print("none img")
+                    self.CredEdt.setText(str(dados[49]))
+                    self.CondEdt.setText(str(dados[50]))
+                    self.CategoryEdt.setText(str(dados[51]))
+                    self.Comment.setText(str(dados[52]))
+                    print("FOI SELECIONADO")
+                    self.TableView.hide()
+                    self.hidden = True
+                else:
+                    print("FOI PRETERIDO(DES-SELECIONADO)")
+            except:
+                msg = QMessageBox()
+                msg.setText("Selecione Algo na Tabela")
+                msg.setWindowTitle("Fail")
+                msg.exec()
+                pass
+
+#=================================================== Front-end functions ===============================================================
+
+    def IE_Check(self, int):                           # The function isChecked returns 1 or 0 that's why the int parameter var value 
         if self.IEchck.isChecked():
             self.stateregedt.setText("ISENTO")
             self.stateregedt.setStyleSheet("QLineEdit {border-radius: 7px; background-color: #b5b5b5; color: black; padding: 7px 14px; border-width:1px; border-color: gray; border-style:solid;}")
@@ -1028,16 +2275,7 @@ class MainTree(QWidget):
         self.input4 = self.zoomedt.text()
         self.pic_pixmap2 = self.pic_pixmap.scaledToWidth(int(self.input4))
         self.piclbl2.setPixmap(QPixmap(self.pic_pixmap2))
-        #self.piclbl2.resize(20, 20)
-
-    def Browse_Image(self):
-        self.fname = QFileDialog.getOpenFileName(self, "Open File", "C\\", "Image Files (*.jpg *.png)")
-        self.fnamepath = self.fname[0]
-
-        self.pic_pixmap = QPixmap(self.fnamepath)
-        self.pic_pixmap2 = self.pic_pixmap.scaledToWidth(80)
-        self.piclbl2.setPixmap(QPixmap(self.pic_pixmap2))
-        self.piclbl2.resize(20, 20)
+        #self.piclbl2.resize(20, 20)    
 
     def ActivatedPerson(self, index):
         print(f"index na list da pessoa tipo selecionado:{index}")
@@ -1056,8 +2294,6 @@ class MainTree(QWidget):
             self.emissedt.show()
             self.contribbox.setCurrentIndex(2)
             self.IEchck.hide()
-            self.contriblbl.setText("Contribuinte")
-            self.countryedt.hide()
             self.cnpjorcpflbl.show()
             self.statereglbl.show()
             self.cityreglbl.show()
@@ -1140,24 +2376,256 @@ class MainTree(QWidget):
         print(event)
         self.cepedt1.setCursorPosition(0)
         self.cepedt2.setCursorPosition(0)
+        self.cnpjedt.setCursorPosition(0)
+        self.cpfedt.setCursorPosition(0)
+        self.foneedt.setCursorPosition(0)
+        self.celedt.setCursorPosition(0)
+
+#======================================================== Busca no db ==============================================================
 
     def RegSrchOne(self, event):
-        self.input1 = self.buscaedt.text()
-        self.input2 = self.searchby.currentText()
-        print(f"buscar:{self.input1}\npor:{self.input2}")
+        try:
+            service_id = 'xxxxxxxxxxxxx'
+            keyring.set_password(service_id, None, 'xxxxxxxxxxxxx')
+            password_key = keyring.get_password(service_id, None)
+
+            con = mc.connect(
+                    host="xxxxxxxxxxxxx",
+                    user="xxxxxxxxxxxxx",
+                    password=password_key,
+                    database="xxxxxxxxxxxxx"
+                )
+            self.input1 = self.buscaedt.text()
+            self.input2 = self.searchby.currentText()
+            print(f"buscar:{self.input1}\npor:{self.input2}")
+            if self.searchby.currentText() == "Nome":
+                query = f"SELECT * FROM knowhow.cadastro_clientes_fornecedores WHERE Nome LIKE '%{self.input1}%'"
+                cursor = con.cursor()
+                cursor.execute(query)
+                result = cursor.fetchall()
+
+                self.TableView.setRowCount(0)
+
+                for row_number, row_data in enumerate(result):
+                    self.TableView.insertRow(row_number)
+                    for column_number , data in enumerate(row_data):
+                        if column_number == 0:
+                            self.item = QTableWidgetItem(f"{row_data[0]}") # ID together with checkbox
+                            self.item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
+                            self.item.setCheckState(Qt.CheckState.Unchecked)
+                            self.TableView.setItem(row_number, column_number, self.item)                     
+                        else:
+                            self.TableView.setItem(row_number, column_number, QTableWidgetItem(str(data)))
+
+                self.TableView.resizeRowsToContents()
+                self.TableView.resizeColumnsToContents()
+                self.TableView.setColumnWidth(0, 70)
+                self.TableView.show()
+                self.hidden = False
+
+            elif self.searchby.currentText() == "CNPJ":
+                query = f"SELECT * FROM knowhow.cadastro_clientes_fornecedores WHERE CNPJ LIKE '%{self.input1}%'"
+                cursor = con.cursor()
+                cursor.execute(query)
+                result = cursor.fetchall()
+
+                self.TableView.setRowCount(0)
+
+                for row_number, row_data in enumerate(result):
+                    self.TableView.insertRow(row_number)
+                    for column_number , data in enumerate(row_data):
+                        if column_number == 0:
+                            self.item = QTableWidgetItem(f"{row_data[0]}") # ID together with checkbox
+                            self.item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
+                            self.item.setCheckState(Qt.CheckState.Unchecked)
+                            self.TableView.setItem(row_number, column_number, self.item)                     
+                        else:
+                            self.TableView.setItem(row_number, column_number, QTableWidgetItem(str(data)))
+
+                self.TableView.resizeRowsToContents()
+                self.TableView.resizeColumnsToContents()
+                self.TableView.setColumnWidth(0, 70)
+                self.TableView.show()
+                self.hidden = False
+
+            elif self.searchby.currentText() == "ID":
+                query = f"SELECT * FROM knowhow.cadastro_clientes_fornecedores WHERE ID LIKE '{self.input1}'"
+                cursor = con.cursor()
+                cursor.execute(query)
+                result = cursor.fetchall()
+
+                self.TableView.setRowCount(0)
+
+                for row_number, row_data in enumerate(result):
+                    self.TableView.insertRow(row_number)
+                    for column_number , data in enumerate(row_data):
+                        if column_number == 0:
+                            self.item = QTableWidgetItem(f"{row_data[0]}") # ID together with checkbox
+                            self.item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
+                            self.item.setCheckState(Qt.CheckState.Unchecked)
+                            self.TableView.setItem(row_number, column_number, self.item)                     
+                        else:
+                            self.TableView.setItem(row_number, column_number, QTableWidgetItem(str(data)))
+
+                self.TableView.resizeRowsToContents()
+                self.TableView.resizeColumnsToContents()
+                self.TableView.setColumnWidth(0, 70)
+                self.TableView.show()
+                self.hidden = False
+
+            elif self.searchby.currentText() == "CPF":
+                query = f"SELECT * FROM knowhow.cadastro_clientes_fornecedores WHERE CPF LIKE '{self.input1}'"
+                cursor = con.cursor()
+                cursor.execute(query)
+                result = cursor.fetchall()
+
+                self.TableView.setRowCount(0)
+
+                for row_number, row_data in enumerate(result):
+                    self.TableView.insertRow(row_number)
+                    for column_number , data in enumerate(row_data):
+                        if column_number == 0:
+                            self.item = QTableWidgetItem(f"{row_data[0]}") # ID together with checkbox
+                            self.item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
+                            self.item.setCheckState(Qt.CheckState.Unchecked)
+                            self.TableView.setItem(row_number, column_number, self.item)                     
+                        else:
+                            self.TableView.setItem(row_number, column_number, QTableWidgetItem(str(data)))
+
+                self.TableView.resizeRowsToContents()
+                self.TableView.resizeColumnsToContents()
+                self.TableView.setColumnWidth(0, 70)
+                self.TableView.show()
+                self.hidden = False
+
+        except mc.Error as e:
+            msg = QMessageBox()
+            msg.setText(f"Falha ao buscar: {e}")
+            msg.setWindowTitle("Busca")
+            msg.exec()
+            pass
+
+        except Exception as b:
+            msg = QMessageBox()
+            msg.setText(f"Falha: {b}")
+            msg.setWindowTitle("Fail")
+            msg.exec()
+            pass
+
+        self.TableView.resizeRowsToContents()
+        self.TableView.resizeColumnsToContents()
+        self.TableView.setColumnWidth(0, 70)
+        self.TableView.show()
+
+        #print(str(row_data))
+        self.IDdel.setText(str(row_data[0]))
+        self.nameedt.setText(str(row_data[1]))
+        self.fanedt.setText(str(row_data[2]))
+        self.personbox.setCurrentText(str(row_data[3]))
+        self.cnpjedt.setText(str(row_data[4]))
+        self.cpfedt.setText(str(row_data[5]))
+        self.codebox.setCurrentText(str(row_data[6]))
+        self.desdeedt.setText(str(row_data[7]))
+        self.contribbox.setCurrentText(str(row_data[8]))
+        self.stateregedt.setText(str(row_data[9]))
+        self.cityregedt.setText(str(row_data[10]))
+        if str(row_data[11]) == "Sim":
+            self.IEchck.setChecked(True)
+        else:
+            self.IEchck.setChecked(False)
+        self.RGEdt.setText(str(row_data[12]))
+        self.emissedt.setText(str(row_data[13]))
+        self.countryedt.setText(str(row_data[14]))
+        self.cepedt1.setText(str(row_data[15]))
+        self.statebox.setCurrentText(str(row_data[16]))
+        self.cityedt.setText(str(row_data[17]))
+        self.bairroedt.setText(str(row_data[18]))
+        self.enderecoedt1.setText(str(row_data[19]))
+        self.numeroedt.setText(str(row_data[20]))
+        self.complementedt.setText(str(row_data[21]))
+        self.cepedt2.setText(str(row_data[22]))
+        self.statebox2.setCurrentText(str(row_data[23]))
+        self.cityedt2.setText(str(row_data[24]))
+        self.bairroedt2.setText(str(row_data[25]))
+        self.enderecoedt2.setText(str(row_data[26]))
+        self.numeroedt2.setText(str(row_data[27]))
+        self.complementedt2.setText(str(row_data[28]))
+        self.foreign_state.setText(str(row_data[29]))
+        self.foreign_state2.setText(str(row_data[30]))
+        self.infoedt.setText(str(row_data[31]))
+        self.pessoasedt.setText(str(row_data[32]))
+        self.foneedt.setText(str(row_data[33]))
+        self.faxedt.setText(str(row_data[34]))
+        self.celedt.setText(str(row_data[35]))
+        self.celedt2.setText(str(row_data[36]))
+        self.emailedt.setText(str(row_data[37]))
+        self.emailedtnfe.setText(str(row_data[38]))
+        self.siteedt.setText(str(row_data[39]))
+        self.celedt3.setText(str(row_data[40]))
+        self.celedt4.setText(str(row_data[41]))
+        self.cargaedt.setText(str(row_data[42]))
+        self.contratoedt.setText(str(row_data[43]))
+        self.situation_box.setCurrentText(str(row_data[44]))
+        self.VendEdt.setText(str(row_data[45]))
+        self.CondEdt.setText(str(row_data[46]))
+        self.InscrEdt.setText(str(row_data[47]))
+        """
+        a lógica aqui é o seguinte: pegar o caminho descrito no db
+        tratá-lo e passá-lo como argumento do pixmap
+        fazendo asism, aparecer o pixmap no label no local correto para cada registro
+        """
+        self.teste = row_data[48]
+        self.y = str(self.teste)
+        self.z = self.y.split("b")
+        imagem = ""
+        imagem = str(self.z[1]) # tratamento caminho da imagem
+        imagem = imagem.split("b") # forma uma lista
+        imagex = ""
+        imagex = imagem[0]
+        imagex = imagex.replace("'", "") # caminho tratado
+        if str(row_data[48]) != "None":
+            self.pic_pixmap = QPixmap(imagex) # exibir imagem a parir do path tratado
+            self.pic_pixmap2 = self.pic_pixmap.scaledToWidth(80) # fixa tamanho imagem para 80 pixel
+            self.piclbl2.setPixmap(QPixmap(self.pic_pixmap2))
+            self.piclbl2.resize(20, 20)
+            print("1442 Entrou na funcao exibir imagem")
+            
+        else:
+            print("none img")
+        self.CredEdt.setText(str(row_data[49]))
+        self.CondEdt.setText(str(row_data[50]))
+        self.CategoryEdt.setText(str(row_data[51]))
+        self.Comment.setText(str(row_data[52]))
+
         self.buscaedt.setFont(QFont("Arial", 9, 4))
         self.buscaedt.setStyleSheet("border-radius: 7px; background-color: white; color: gray; padding: 7px 14px; border-width:1px; border-color: gray; border-style:solid;")
-        self.buscaedt.setText("Selecionar método de busca e digitar:")        
+        self.buscaedt.setText("Selecionar método de busca e digitar:")   
 
+        
+    def ShowHideTable(self):
+        if self.hidden:
+            self.TableView.show()
+            self.hidden = False
+        else:
+            self.TableView.hide()
+            self.hidden = True
+            
     def ClearBusca(self, event):
         self.buscaedt.clear()
         self.buscaedt.setFont(QFont("Arial", 12, 12))
         self.buscaedt.setStyleSheet("border-radius: 7px; background-color: white; color: black; padding: 7px 14px; border-width:1px; border-color: #44a665; border-style:solid;")
+        if self.searchby.currentText() == "CNPJ":
+            self.buscaedt.setInputMask("99.999.999/9999-99")
+        elif self.searchby.currentText() == "CPF":
+            self.buscaedt.setInputMask("999.999.999-99")
+        elif self.searchby.currentText() == "ID":
+            self.buscaedt.setInputMask("999999")
+        else:
+            pass
 
-
-
+        
 app = QApplication(sys.argv)
 
-SomeEnterpriseApp = MainTree()
-SomeEnterpriseApp.show()
+xxxxxxxxxxxxx = MainTree()
+xxxxxxxxxxxxx.show()
 app.exec()
